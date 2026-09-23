@@ -125,7 +125,7 @@ Get-ADDefaultDomainPasswordPolicy |
 
 The most significant weakness for the purposes of Lab 15 was the lockout threshold of `0`, meaning failed authentication attempts would not trigger account lockout.
 
-![Password policy baseline](screenshots/01-AD-Defense-pass-policy-baseline.png)
+![Password policy baseline](screenshots/01-AD-defense-pass-policy-baseline.png)
 
 ---
 
@@ -153,7 +153,7 @@ The intentionally vulnerable `lab.service` account had:
 * `PasswordNotRequired = False`
 * SPN: `HTTP/labservice.home.lab`
 
-![Enabled account baseline](screenshots/02-AD-Defense-enabled-accounts.png)
+![Enabled account baseline](screenshots/02-AD-defense-enabled-accounts.png)
 
 ---
 
@@ -184,7 +184,7 @@ Get-ADGroupMember -Identity "Administrators" |
 
 This confirmed that the delegated lab administrator was not directly placed into the domain's highest-privilege groups.
 
-![Privileged group baseline](screenshots/03-AD-Defense-privileged-groups-baseline.png)
+![Privileged group baseline](screenshots/03-AD-defense-privileged-groups-baseline.png)
 
 ---
 
@@ -207,7 +207,7 @@ HTTP/labservice.home.lab
 
 This SPN was intentionally retained for the defensive Kerberoasting comparison.
 
-![SPN baseline](screenshots/04-AD-Defense-SPN-baseline.png)
+![SPN baseline](screenshots/04-AD-defense-SPN-baseline.png)
 
 ---
 
@@ -239,7 +239,7 @@ The result showed:
 
 The delegated permission remained intentionally scoped to the `Lab Users` OU.
 
-![Delegated password reset baseline](screenshots/05-AD-Defense-delegated-pass-reset-baseline.png)
+![Delegated password reset baseline](screenshots/05-AD-defense-delegated-pass-reset-baseline.png)
 
 ---
 
@@ -277,7 +277,7 @@ Get-ADDefaultDomainPasswordPolicy |
 
 The other password-policy settings remained unchanged.
 
-![Hardened lockout policy](screenshots/06-AD-Defense-lockout-policy-hardened.png)
+![Hardened lockout policy](screenshots/06-AD-defense-lockout-policy-hardened.png)
 
 ---
 
@@ -327,7 +327,7 @@ Get-ADUser -Identity "Administrator" -Properties PasswordNeverExpires |
 
 No Administrator password was changed as part of this step.
 
-![Administrator password hardening](screenshots/07-AD-Defense-admin-pass-hardened.png)
+![Administrator password hardening](screenshots/07-AD-defense-admin-pass-hardened.png)
 
 ---
 
@@ -369,7 +369,7 @@ msDS-SupportedEncryptionTypes : 24
 
 This configuration enables explicit AES128 and AES256 support for the account.
 
-![AES configuration](screenshots/08-AD-Defense-service-account-AES-configured.png)
+![AES configuration](screenshots/08-AD-defense-service-account-AES-configured.png)
 
 ---
 
@@ -404,7 +404,7 @@ PasswordExpired | Select-Object SamAccountName, PasswordLastSet, PasswordExpired
 
 The password was successfully changed and was not expired.
 
-![Service account password rotation](screenshots/09-AD-Defense-service-account-pass-rotated.png)
+![Service account password rotation](screenshots/09-AD-defense-service-account-pass-rotated.png)
 
 ---
 
@@ -441,7 +441,7 @@ for both the session and ticket encryption type.
 
 This confirmed that the service account's new Kerberos configuration was being used in practice.
 
-![AES256 service ticket](screenshots/10-AD-Defense-AES256-service-ticket.png)
+![AES256 service ticket](screenshots/10-AD-defense-AES256-service-ticket.png)
 
 ---
 
@@ -485,7 +485,7 @@ Kerberoasting was not eliminated entirely because an SPN-backed account can stil
 
 The full TGS material was intentionally excluded from the repository.
 
-![AES Kerberoast result](screenshots/11-AD-Defense-Kerberoast-AES256-result.png)
+![AES Kerberoast result](screenshots/11-AD-defense-Kerberoast-AES256-result.png)
 
 ---
 
@@ -523,7 +523,7 @@ lab.admin
 
 The password-reset permission remained scoped to descendants of the `Lab Users` OU.
 
-![Delegation scope validation](screenshots/12-AD-Defense-delegation-scope-validation.png)
+![Delegation scope validation](screenshots/12-AD-defense-delegation-scope-validation.png)
 
 ---
 
@@ -548,7 +548,7 @@ Get-SmbServerConfiguration |
 * SMB signing required: Enabled
 * Unencrypted access rejected: Enabled
 
-![SMB server configuration](screenshots/13-AD-Defense-SMB-server-baseline.png)
+![SMB server configuration](screenshots/13-AD-defense-SMB-server-baseline.png)
 
 From Kali, SMB security characteristics were checked:
 
@@ -565,7 +565,7 @@ SMBv1:None
 
 This provided attacker-side confirmation that SMB signing was required and SMBv1 was unavailable.
 
-![SMB network validation](screenshots/14-AD-Defense-SMB-network-validation.png)
+![SMB network validation](screenshots/14-AD-defense-SMB-network-validation.png)
 
 ---
 
@@ -583,7 +583,7 @@ The test also reported that SMB1 was disabled.
 
 This result does **not** prove that anonymous authentication is completely disabled. It demonstrates that the tested anonymous SMB session did not expose the available shares through anonymous share enumeration.
 
-![Anonymous SMB validation](screenshots/15-AD-Defense-SMB-anon-validation.png)
+![Anonymous SMB validation](screenshots/15-AD-defense-SMB-anon-validation.png)
 
 ---
 
@@ -629,7 +629,7 @@ The resulting value was:
 LDAPServerIntegrity : 2
 ```
 
-![LDAP signing hardened](screenshots/16-AD-Defense-LDAP-signing-hardened.png)
+![LDAP signing hardened](screenshots/16-AD-defense-LDAP-signing-hardened.png)
 
 ---
 
@@ -653,7 +653,7 @@ This directly validates that the DC is no longer accepting the tested unsigned s
 
 Protected LDAP mechanisms such as Kerberos/GSSAPI were not being disabled by this setting.
 
-![LDAP signing validation](screenshots/17-AD-Defense-LDAP-signing-validation.png)
+![LDAP signing validation](screenshots/17-AD-defense-LDAP-signing-validation.png)
 
 ---
 
@@ -730,7 +730,7 @@ The resulting policy included successful auditing for:
 * Detailed File Share
 * Authentication and account-management events already enabled by the domain
 
-![Hardened audit policy](screenshots/18-AD-Defense-audit-policy-hardened.png)
+![Hardened audit policy](screenshots/18-AD-defense-audit-policy-hardened.png)
 
 ---
 
@@ -770,7 +770,7 @@ The newest event recorded:
 
 The Windows event therefore correlated directly with the controlled authentication attempt from Kali.
 
-![Failed authentication event](screenshots/19-AD-Defense-4625-failed-authentication.png)
+![Failed authentication event](screenshots/19-AD-defense-4625-failed-authentication.png)
 
 ---
 
@@ -803,7 +803,7 @@ The resulting Event ID 4688 recorded:
 
 This confirmed that Process Creation auditing was functioning.
 
-![Process creation event](screenshots/20-AD-Defense-4688-process-creation.png)
+![Process creation event](screenshots/20-AD-defense-4688-process-creation.png)
 
 ---
 
@@ -902,7 +902,7 @@ SamAccountName    LockedOut
 lab.admin         True
 ```
 
-![Account lockout validation](screenshots/21-AD-Defense-account-lockout-validation.png)
+![Account lockout validation](screenshots/21-AD-defense-account-lockout-validation.png)
 
 The account was then restored:
 

@@ -1,0 +1,149 @@
+# PASSWORD POLICY BASELINE
+Get-ADDefaultDomainPasswordPolicy |
+    Select-Object MinPasswordLength,
+    ComplexityEnabled,
+    PasswordHistoryCount,
+    MaxPasswordAge,
+    MinPasswordAge,
+    LockoutThreshold,
+    LockoutDuration,
+    LockoutObservationWindow
+
+# ENABLED ACCOUNT BASELINE
+Get-ADUser -Filter 'Enabled -eq $true' -Properties PasswordNeverExpires,PasswordNotRequired,ServicePrincipalName |
+    Select-Object Name,
+    SamAccountName,
+    PasswordNeverExpires,
+    PasswordNotRequired,
+    ServicePrincipalName |
+    Format-Table -AutoSize
+
+# PRIVILEGED GROUP BASELINE
+Get-ADGroupMember -Identity "Domain Admins" |
+    Select-Object Name, SamAccountName, ObjectClass |
+    Format-Table -AutoSize
+Get-ADGroupMember -Identity "Enterprise Admins" |
+    Select-Object Name, SamAccountName, ObjectClass |
+    Format-Table -AutoSize
+Get-ADGroupMember -Identity "Administrators" |
+    Select-Object Name, SamAccountName, ObjectClass |
+    Format-Table -AutoSize
+
+# SPN BASELINE
+Get-ADUser -Filter 'Enabled -eq $true' -Properties ServicePrincipalName |
+    Where-Object { $_.ServicePrincipalName } |
+    Select-Object Name, SamAccountName, ServicePrincipalName |
+    Format-List
+
+# DELEGATED PASSWORD RESET BASELINE
+Get-Acl "AD:\OU=Lab Users,DC=home,DC=lab" |
+    Select-Object -ExpandProperty Access |
+    Where-Object {
+    $*.IdentityReference -like "*Lab-IT-Admins*" -and
+    $*.ActiveDirectoryRights -match "ExtendedRight"
+    } |
+    Select-Object IdentityReference,
+    ActiveDirectoryRights,
+    AccessControlType,
+    ObjectType,
+    InheritanceType
+
+# ACCOUNT LOCKOUT HARDENING
+Set-ADDefaultDomainPasswordPolicy `    -Identity "home.lab"`
+    -LockoutThreshold 5 `    -LockoutDuration (New-TimeSpan -Minutes 15)`
+    -LockoutObservationWindow (New-TimeSpan -Minutes 15)
+Get-ADDefaultDomainPasswordPolicy |
+    Select-Object MinPasswordLength,
+    ComplexityEnabled,
+    PasswordHistoryCount,
+    MaxPasswordAge,
+    MinPasswordAge,
+    LockoutThreshold,
+    LockoutDuration,
+    LockoutObservationWindow
+
+# DMINISTRATOR PASSWORD EXPIRATION
+Get-ADUser -Identity "Administrator" -Properties Enabled,
+    PasswordNeverExpires,
+    PasswordNotRequired,
+    PasswordExpired,
+    LastLogonDate,
+    PasswordLastSet |
+    Select-Object Name,
+    SamAccountName,
+    Enabled,
+    PasswordNeverExpires,
+    PasswordNotRequired,
+    PasswordExpired,
+    LastLogonDate,
+    PasswordLastSet
+Set-ADUser -Identity "Administrator" -PasswordNeverExpires $false
+Get-ADUser -Identity "Administrator" -Properties PasswordNeverExpires |
+    Select-Object Name, SamAccountName, PasswordNeverExpires
+
+# SERVICE ACCOUNT KERBEROS BASELINE
+Get-ADUser -Identity "lab.service" -Properties `
+    ServicePrincipalName,
+    msDS-SupportedEncryptionTypes |
+    Select-Object SamAccountName,
+    ServicePrincipalName,
+    msDS-SupportedEncryptionTypes
+Get-ItemProperty `    
+    -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\Kerberos\Parameters"`
+    -ErrorAction SilentlyContinue
+Get-ItemProperty `    
+    -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"`
+    -ErrorAction SilentlyContinue
+
+# SERVICE ACCOUNT AES CONFIGURATION
+Set-ADUser -Identity "lab.service" `
+    -Replace @{"msDS-SupportedEncryptionTypes" = 24}
+Get-ADUser -Identity "lab.service" `
+    -Properties ServicePrincipalName, msDS-SupportedEncryptionTypes |
+    Select-Object SamAccountName, ServicePrincipalName, msDS-SupportedEncryptionTypes
+
+# SERVICE ACCOUNT PASSWORD SECURITY FLAGS
+Get-ADUser -Identity "lab.service" -Properties PasswordNeverExpires, `    
+    PasswordNotRequired, PasswordExpired, PasswordLastSet | Select-Object SamAccountName,`
+    PasswordNeverExpires, PasswordNotRequired, PasswordExpired, PasswordLastSet
+
+# SERVICE ACCOUNT RANDOM PASSWORD GENERATION
+$RNG = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$RNG.GetBytes($RandomBytes)
+$ServicePassword = [Convert]::ToBase64String($RandomBytes)
+$ServicePassword
+
+Set-ADAccountPassword -Identity "lab.service" -Reset -NewPassword `
+    (ConvertTo-SecureString $ServicePassword -AsPlainText -Force)
+
+Get-ADUser -Identity "lab.service" -Properties PasswordLastSet, `
+    PasswordExpired | Select-Object SamAccountName, PasswordLastSet, PasswordExpired
+
+# WINDOWS AUDIT POLICY
+auditpol /get /category:*
+auditpol /set /subcategory:"Process Creation" /success:enable
+auditpol /get /subcategory:"Process Creation"
+Start-Process notepad.exe
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 4688
+    } -MaxEvents 10 |
+    Select-Object TimeCreated, Id, Message |
+    Format-List
+auditpol /set /subcategory:"Directory Service Changes" /success:enable
+auditpol /get /subcategory:"Directory Service Changes"
+Set-ADUser -Identity "lab.user" -Description "Lab 16 defense validation"
+Get-ADUser -Identity "lab.user" -Properties Description |
+    Select-Object SamAccountName, Description
+Get-WinEvent -FilterHashtable @{
+    LogName = 'Security'
+    Id      = 5136
+    } -MaxEvents 10 |
+    Select-Object TimeCreated, Id, Message |
+    Format-List
+auditpol /set /subcategory:"Security Group Management" /success:enable
+auditpol /set /subcategory:"Group Membership" /success:enable
+auditpol /get /subcategory:"Security Group Management","Group Membership"
+auditpol /set /subcategory:"Detailed File Share" /success:enable
+auditpol /get /subcategory:"Detailed File Share"
+auditpol /get /category:*
